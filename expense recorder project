@@ -1,0 +1,78 @@
+import json
+from datetime import datetime
+
+# Function to load expense data from a JSON file
+def load_expenses():
+    try:
+        with open("expenses.json", "r") as file:
+            return json.load(file)
+    except FileNotFoundError:
+        return []
+
+# Function to save expense data to a JSON file
+def save_expenses(expenses):
+    with open("expenses.json", "w") as file:
+        json.dump(expenses, file)
+
+# Function to display menu options
+def display_menu():
+    print("\nExpense Recording System Menu:")
+    print("1. Add Expense")
+    print("2. View Summary")
+    print("3. Exit")
+
+# Function to add a new expense
+def add_expense(expenses):
+    amount = float(input("Enter the amount spent: "))
+    description = input("Enter a brief description: ")
+    category = input("Enter the expense category: ").lower()
+    
+    # Check if category exists, if not, ask user to add it
+    if category not in categories:
+        print("Category not found.")
+        add_category = input("Do you want to add this category? (yes/no): ").lower()
+        if add_category == "yes":
+            categories.append(category)
+        else:
+            print("Expense not added.")
+            return
+    
+    date = datetime.now().strftime("%Y-%m-%d")
+    expenses.append({"date": date, "amount": amount, "description": description, "category": category})
+    print("Expense added successfully.")
+
+# Function to view expense summary
+def view_summary(expenses):
+    total_spent = sum(expense["amount"] for expense in expenses)
+    print("\nExpense Summary:")
+    print(f"Total Amount Spent: ${total_spent:.2f}")
+    print("\nCategory-wise Breakdown:")
+    for category in categories:
+        category_total = sum(expense["amount"] for expense in expenses if expense["category"] == category)
+        print(f"{category.capitalize()}: ${category_total:.2f}")
+
+# Main function
+def main():
+    expenses = load_expenses()
+    
+    while True:
+        display_menu()
+        choice = input("Enter your choice: ")
+        
+        if choice == "1":
+            add_expense(expenses)
+        elif choice == "2":
+            view_summary(expenses)
+        elif choice == "3":
+            save_expenses(expenses)
+            print("Exiting the program.")
+            break
+        else:
+            print("Invalid choice. Please choose again.")
+
+# Load existing categories or initialize an empty list
+categories = ["groceries", "transportation", "utilities"]
+
+# Main function call
+if __name__ == "__main__":
+    main()
