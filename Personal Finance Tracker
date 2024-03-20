@@ -1,0 +1,167 @@
+import json
+from datetime import datetime
+import openpyxl
+import sqlite3
+
+class ExpenseTracker:
+    def __init__(self):
+        self.expenses = []
+        self.categories = ["groceries", "transportation", "utilities"]
+
+    def load_expenses(self):
+        try:
+            with open("expenses.json", "r") as file:
+                self.expenses = json.load(file)
+        except FileNotFoundError:
+            self.expenses = []
+
+    def save_expenses(self):
+        with open("expenses.json", "w") as file:
+            json.dump(self.expenses, file)
+
+    def add_expense(self):
+        amount = float(input("Enter the amount spent: "))
+        description = input("Enter a brief description: ")
+        category = self.select_category()
+        date = datetime.now().strftime("%Y-%m-%d")
+        self.expenses.append({"date": date, "amount": amount, "description": description, "category": category})
+        print("Expense added successfully.")
+
+    def edit_expense(self):
+        index = int(input("Enter the index of the expense you want to edit: "))
+        if index < 0 or index >= len(self.expenses):
+            print("Invalid index.")
+            return
+        
+        expense = self.expenses[index]
+        print("Current Expense Details:")
+        print(f"1. Date: {expense['date']}")
+        print(f"2. Amount: {expense['amount']}")
+        print(f"3. Description: {expense['description']}")
+        print(f"4. Category: {expense['category']}")
+        
+        choice = input("Enter the number of the field you want to edit: ")
+        if choice == "1":
+            self.expenses[index]["date"] = datetime.now().strftime("%Y-%m-%d")
+        elif choice == "2":
+            self.expenses[index]["amount"] = float(input("Enter the new amount: "))
+        elif choice == "3":
+            self.expenses[index]["description"] = input("Enter the new description: ")
+        elif choice == "4":
+            self.expenses[index]["category"] = self.select_category()
+        else:
+            print("Invalid choice.")
+            return
+        
+        print("Expense edited successfully.")
+
+    def delete_expense(self):
+        index = int(input("Enter the index of the expense you want to delete: "))
+        if index < 0 or index >= len(self.expenses):
+            print("Invalid index.")
+            return
+        
+        del self.expenses[index]
+        print("Expense deleted successfully.")
+
+    def select_category(self):
+        print("Select a category:")
+        for i, category in enumerate(self.categories, 1):
+            print(f"{i}. {category}")
+        while True:
+            try:
+                category_index = int(input("Enter the number of the category: ")) - 1
+                if 0 <= category_index < len(self.categories):
+                    return self.categories[category_index]
+                else:
+                    print("Invalid category number.")
+            except ValueError:
+                print("Invalid input.")
+
+    def export_to_excel(self):
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.append(["Date", "Description", "Amount", "Category"])
+        for expense in self.expenses:
+            ws.append([expense["date"], expense["description"], expense["amount"], expense["category"]])
+        wb.save("expenses.xlsx")
+        print("Expenses exported to Excel successfully.")
+
+    def export_to_text(self):
+        with open("expenses.txt", "w") as file:
+            for expense in self.expenses:
+                file.write(f"{expense['date']}, {expense['description']}, {expense['amount']}, {expense['category']}\n")
+        print("Expenses exported to text file successfully.")
+
+    def export_to_sqlite(self):
+        conn = sqlite3.connect("expenses.db")
+        c = conn.cursor()
+        c.execute('''CREATE TABLE IF NOT EXISTS expenses
+                     (date TEXT, description TEXT, amount REAL, category TEXT)''')
+        for expense in self.expenses:
+            c.execute("INSERT INTO expenses VALUES (?, ?, ?, ?)", (expense["date"], expense["description"], expense["amount"], expense["category"]))
+        conn.commit()
+        conn.close()
+        print("Expenses exported to SQLite database successfully.")
+
+    def display_summary(self):
+        total_spent = sum(expense["amount"] for expense in self.expenses)
+        print("\nExpense Summary:")
+        print(f"Total Amount Spent: ${total_spent:.2f}")
+        print("\nCategory-wise Breakdown:")
+        category_totals = {}
+        for category in self.categories:
+            category_total = sum(expense["amount"] for expense in self.expenses if expense["category"] == category)
+            category_totals[category] = category_total
+            print(f"{category.capitalize()}: ${category_total:.2f}")
+        
+        highest_category = max(category_totals, key=category_totals.get)
+        lowest_category = min(category_totals, key=category_totals.get)
+        print(f"\nCategory with Highest Expenses: {highest_category.capitalize()} (${category_totals[highest_category]:.2f})")
+        print(f"Category with Lowest Expenses: {lowest_category.capitalize()} (${category_totals[lowest_category]:.2f})")
+        
+        print("\nPercentage of Total Spending by Category:")
+        for category, total in category_totals.items():
+            percentage = (total / total_spent) * 100 if total_spent > 0 else 0
+            print(f"{category.capitalize()}: {percentage:.2f}%")
+
+    def main(self):
+        self.load_expenses()
+        
+        while True:
+            print("\nExpense Tracker Menu:")
+            print("1. Add Expense")
+            print("2. Edit Expense")
+            print("3. Delete Expense")
+            print("4. Export to Excel")
+            print("5. Export to Text")
+            print("6. Export to SQLite")
+            print("7. Display Summary")
+            print("8. Exit")
+            
+            choice = input("Enter your choice: ")
+            
+            if choice == "1":
+                self.add_expense()
+            elif choice == "2":
+                self.edit_expense()
+            elif choice == "3":
+                self.delete_expense()
+            elif choice == "4":
+                self.export_to_excel()
+            elif choice == "5":
+                self.export_to_text()
+            elif choice == "6":
+                self.export_to_sqlite()
+            elif choice == "7":
+                self.display_summary()
+            elif choice == "8":
+                self.save_expenses()
+                print("Exiting the program.")
+                break
+            else:
+                print("Invalid choice. Please choose again.")
+
+if __name__ == "__main__":
+    tracker = ExpenseTracker()
+    tracker.main()
