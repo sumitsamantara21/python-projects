@@ -1,0 +1,143 @@
+import json
+from datetime import datetime
+import openpyxl
+
+# Function to load expense data from a JSON file
+def load_expenses():
+    try:
+        with open("expenses.json", "r") as file:
+            return json.load(file)
+    except FileNotFoundError:
+        return []
+
+# Function to save expense data to a JSON file
+def save_expenses(expenses):
+    with open("expenses.json", "w") as file:
+        json.dump(expenses, file)
+
+# Function to add a new expense
+def add_expense(expenses):
+    amount = float(input("Enter the amount spent: "))
+    description = input("Enter a brief description: ")
+    category = input("Enter the expense category: ").lower()
+    
+    # Check if category exists, if not, ask user to add it
+    if category not in categories:
+        print("Category not found.")
+        add_category = input("Do you want to add this category? (yes/no): ").lower()
+        if add_category == "yes":
+            categories.append(category)
+        else:
+            print("Expense not added.")
+            return
+    
+    date = datetime.now().strftime("%Y-%m-%d")
+    expenses.append({"date": date, "amount": amount, "description": description, "category": category})
+    print("Expense added successfully.")
+
+# Function to edit an existing expense
+def edit_expense(expenses):
+    index = int(input("Enter the index of the expense you want to edit: "))
+    if index < 0 or index >= len(expenses):
+        print("Invalid index.")
+        return
+    
+    expense = expenses[index]
+    print("Current Expense Details:")
+    print(f"1. Date: {expense['date']}")
+    print(f"2. Amount: {expense['amount']}")
+    print(f"3. Description: {expense['description']}")
+    print(f"4. Category: {expense['category']}")
+    
+    choice = input("Enter the number of the field you want to edit: ")
+    if choice == "1":
+        expenses[index]["date"] = datetime.now().strftime("%Y-%m-%d")
+    elif choice == "2":
+        expenses[index]["amount"] = float(input("Enter the new amount: "))
+    elif choice == "3":
+        expenses[index]["description"] = input("Enter the new description: ")
+    elif choice == "4":
+        new_category = input("Enter the new category: ").lower()
+        if new_category not in categories:
+            print("Category not found.")
+            add_category = input("Do you want to add this category? (yes/no): ").lower()
+            if add_category == "yes":
+                categories.append(new_category)
+            else:
+                print("Expense not edited.")
+                return
+        expenses[index]["category"] = new_category
+    else:
+        print("Invalid choice.")
+        return
+    
+    print("Expense edited successfully.")
+
+# Function to delete an existing expense
+def delete_expense(expenses):
+    index = int(input("Enter the index of the expense you want to delete: "))
+    if index < 0 or index >= len(expenses):
+        print("Invalid index.")
+        return
+    
+    del expenses[index]
+    print("Expense deleted successfully.")
+
+# Function to export expenses to an Excel spreadsheet
+def export_to_excel(expenses):
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.append(["Date", "Description", "Amount", "Category"])
+    for expense in expenses:
+        ws.append([expense["date"], expense["description"], expense["amount"], expense["category"]])
+    wb.save("expenses.xlsx")
+    print("Expenses exported to Excel successfully.")
+
+# Function to display expense summary
+def display_summary(expenses):
+    total_spent = sum(expense["amount"] for expense in expenses)
+    print("\nExpense Summary:")
+    print(f"Total Amount Spent: ${total_spent:.2f}")
+    print("\nCategory-wise Breakdown:")
+    for category in categories:
+        category_total = sum(expense["amount"] for expense in expenses if expense["category"] == category)
+        print(f"{category.capitalize()}: ${category_total:.2f}")
+
+# Main function
+def main():
+    expenses = load_expenses()
+    
+    while True:
+        print("\nExpense Tracker Menu:")
+        print("1. Add Expense")
+        print("2. Edit Expense")
+        print("3. Delete Expense")
+        print("4. Export to Excel")
+        print("5. Display Summary")
+        print("6. Exit")
+        
+        choice = input("Enter your choice: ")
+        
+        if choice == "1":
+            add_expense(expenses)
+        elif choice == "2":
+            edit_expense(expenses)
+        elif choice == "3":
+            delete_expense(expenses)
+        elif choice == "4":
+            export_to_excel(expenses)
+        elif choice == "5":
+            display_summary(expenses)
+        elif choice == "6":
+            save_expenses(expenses)
+            print("Exiting the program.")
+            break
+        else:
+            print("Invalid choice. Please choose again.")
+
+# Load existing categories or initialize an empty list
+categories = ["groceries", "transportation", "utilities"]
+
+# Main function call
+if __name__ == "__main__":
+    main()
